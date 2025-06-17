@@ -3,7 +3,23 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Basic styles from App.css can be moved here or in App.css */
+/* Ensure html and body take up the full viewport height and have no margins/paddings. */
+/* Explicitly disable common properties that can break fixed positioning. */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%; /* Ensures 100% of parent's height */
+  width: 100%; /* Ensures 100% of parent's width */
+  overflow-x: hidden; /* Prevent horizontal scrollbar */
+  position: relative; /* Set position for consistency, though fixed should be relative to viewport */
+  /* These are the critical resets for fixed positioning issues caused by parent transforms/filters */
+  transform: none !important;
+  filter: none !important;
+  perspective: none !important;
+  contain: layout style !important; /* Help browser optimize rendering, can prevent some weirdness */
+}
+
+/* Base styling for your app's typography and color scheme */
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -11,12 +27,35 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: #242424; /* Your desired global background */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Ensure no default margin/padding from user agent stylesheet or other sources */
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh; /* This is where the #root takes full viewport height */
+  text-align: initial; /* Reset text-align if it was centered by default */
+}
+
+/* #root should not have conflicting layout properties. */
+/* It should simply be the container for your React app. */
+#root {
+  /* All these were found in your dev tools output, we're explicitly removing them */
+  max-width: none; /* Override 1280px */
+  margin: 0;      /* Override 0 auto */
+  padding: 0;     /* Override 2rem */
+  text-align: initial; /* Override center */
+  width: 100%;
+  min-height: 100vh;
+  /* Crucial: Ensure no transforms/filters/perspectives are applied to #root either */
+  transform: none !important;
+  filter: none !important;
+  perspective: none !important;
 }
 
 a {
@@ -28,24 +67,11 @@ a:hover {
   color: #535bf2;
 }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
+/* The rest of these styles from your App.css might still be in index.css */
+/* If App.css is still imported, ensure these aren't duplicated there */
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
-}
-
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
 }
 
 .logo {

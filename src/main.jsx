@@ -15,6 +15,7 @@ if (window.Telegram && window.Telegram.WebApp) {
 
 const Root = () => {
   useEffect(() => {
+    // Ensure Firebase and Auth are initialized when the root component mounts
     initializeFirebaseAndAuth();
   }, []); // Run once on component mount
 

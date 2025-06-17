@@ -1,23 +1,34 @@
-// src/firebaseConfig.js
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth'; // Import for authentication
+import { getAuth, signInWithCustomToken, signInAnonymously } from 'firebase/auth';
 
-// Replace with your actual Firebase configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyDBDAq2GD3Pfx6S_vzzZ4a54OZJA3Yl8xU",
-    authDomain: "giftshardsminer.firebaseapp.com",
-    projectId: "giftshardsminer",
-    storageBucket: "giftshardsminer.firebasestorage.app",
-    messagingSenderId: "404666854983",
-    appId: "1:404666854983:web:26de97b3d5d72e4ffe8b62"
-  };
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
+};
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// Initialize Firestore and Auth
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-export { db, auth };
+const initializeFirebaseAndAuth = async () => {
+  try {
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    if (initialAuthToken) {
+      await signInWithCustomToken(auth, initialAuthToken);
+      console.log('Signed in with custom token.');
+    } else {
+      await signInAnonymously(auth);
+      console.log('Signed in anonymously.');
+    }
+  } catch (error) {
+    console.error('Firebase authentication error:', error);
+  }
+};
+
+export { db, auth, initializeFirebaseAndAuth, appId };
