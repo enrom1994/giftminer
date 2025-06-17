@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { db, auth, appId } from './firebaseConfig.js';
+import { db, auth, appId } from './firebaseConfig';
 import { 
   collection, 
   addDoc, 
@@ -10,9 +10,9 @@ import {
   getDoc, 
   setDoc, 
   updateDoc, 
-  serverTimestamp,
-  FieldValue // Added import for FieldValue
-} from 'firebase/firestore'; 
+  serverTimestamp, 
+  FieldValue
+} from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import NavigationBar from './components/NavigationBar.jsx';
@@ -45,6 +45,7 @@ function App() {
   const [userDataLoading, setUserDataLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
+  const [errorId, setErrorId] = useState(null); // For debouncing alerts
   const functions = getFunctions();
 
   // Calculate accumulated shards since last claim time
@@ -101,6 +102,7 @@ function App() {
             );
             setShardsToClaim(calculatedShards);
             console.log("User data fetched:", userData);
+            setErrorId(null); // Clear error on successful fetch
           } else {
             console.log("User document not found, creating default.");
             setDoc(userDocRef, {
@@ -113,33 +115,43 @@ function App() {
               console.log("Default user document created.");
             }).catch(error => {
               console.error("Error creating user document:", error);
-              window.Telegram?.WebApp?.showAlert('Failed to create user data.');
+              if (errorId !== error.message) {
+                window.Telegram?.WebApp?.showAlert('Failed to create user data.');
+                setErrorId(error.message);
+              }
             });
           }
           setUserDataLoading(false);
         }, (error) => {
           console.error("Error fetching user data:", error);
-          window.Telegram?.WebApp?.showAlert('Failed to load user data.');
+          if (errorId !== error.message) {
+            window.Telegram?.WebApp?.showAlert('Failed to load user data.');
+            setErrorId(error.message);
+          }
           setUserDataLoading(false);
         });
 
-        // Messages listener (consider removing if not needed)
-        const messagesCollectionRef = collection(db, `artifacts/${appId}/public/data/messages`);
-        const q = query(messagesCollectionRef, orderBy('timestamp', 'desc'));
-        const unsubscribeFirestoreMessages = onSnapshot(q, (snapshot) => {
-          const fetchedMessages = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          setMessages(fetchedMessages);
-        }, (error) => {
-          console.error("Error fetching messages:", error);
-        });
+        // Messages listener (disabled as per user request)
+        // const messagesCollectionRef = collection(db, `artifacts/${appId}/public/data/messages`);
+        // const q = query(messagesCollectionRef, orderBy('timestamp', 'desc'));
+        // const unsubscribeFirestoreMessages = onSnapshot(q, (snapshot) => {
+        //   const fetchedMessages = snapshot.docs.map(doc => ({
+        //     id: doc.id,
+        //     ...doc.data()
+        //   }));
+        //   setMessages(fetchedMessages);
+        // }, (error) => {
+        //   console.error("Error fetching messages:", error);
+        //   if (errorId !== error.message) {
+        //     window.Telegram?.WebApp?.showAlert('Failed to load messages.');
+        //     setErrorId(error.message);
+        //   }
+        // });
 
         return () => {
           unsubscribeAuth();
           unsubscribeUserData();
-          unsubscribeFirestoreMessages();
+          // unsubscribeFirestoreMessages();
         };
       } else {
         setUserId(null);
@@ -151,12 +163,13 @@ function App() {
         setUserDataLoading(false);
         setIsAdmin(false);
         setMessages([]);
+        setErrorId(null); // Reset error state
         console.log("No Firebase user is signed in.");
       }
     });
 
     return () => unsubscribeAuth();
-  }, [db, auth, appId, calculateShardsToClaim]);
+  }, [db, auth, appId, calculateShardsToClaim, errorId]);
 
   // Handler functions
   const handleGoMineClick = useCallback(() => {
